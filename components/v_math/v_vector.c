@@ -53,3 +53,11 @@ vec3_t vec3_cross(vec3_t a, vec3_t b) {
         f16_sub(f16_mul(a.x, b.y), f16_mul(a.y, b.x))
     };
 }
+
+vec3_t vec3_normal(vec3_t a, vec3_t b, vec3_t c)
+{
+  vec3_t vector_a = vec3_sub(b, a);
+  vec3_t vector_b = vec3_sub(c, a);
+  vec3_t cross = vec3_cross(vector_a, vector_b);
+  return vec3_normalize(cross);
+}

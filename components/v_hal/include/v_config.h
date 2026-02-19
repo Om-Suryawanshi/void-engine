@@ -23,11 +23,11 @@
 #define V_BUFFER_SIZE (V_DISPLAY_WIDTH * V_DISPLAY_HEIGHT) // Total pixels
 
 // Buttons 
-#define BUTTON_1 13
-#define BUTTON_2 14
-#define BUTTON_3 25
-#define BUTTON_4 26
-#define BUTTON_5 27
-#define BUTTON_6 32
+#define BUTTON_1 14 
+#define BUTTON_2 13 
+#define BUTTON_3 25 
+#define BUTTON_4 27 
+#define BUTTON_5 26 
+#define BUTTON_6 32 
 
 #endif

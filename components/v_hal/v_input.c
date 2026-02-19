@@ -6,12 +6,12 @@
 
 static volatile uint8_t input_state = 0;
 
-#define PIN_UP    BUTTON_1
-#define PIN_DOWN  BUTTON_2
-#define PIN_LEFT  BUTTON_3
-#define PIN_RIGHT BUTTON_4
-#define PIN_A     BUTTON_5
-#define PIN_B     BUTTON_6
+#define PIN_A     BUTTON_1
+#define PIN_B     BUTTON_2
+#define PIN_UP    BUTTON_3
+#define PIN_DOWN  BUTTON_4
+#define PIN_LEFT  BUTTON_5
+#define PIN_RIGHT BUTTON_6
 
 void input_task(void *pvParameter)
 {

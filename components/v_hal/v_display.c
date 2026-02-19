@@ -103,7 +103,7 @@ void display_init(void)
   lcd_data(colmod, 1);
 
   lcd_cmd(CMD_MADCTL);
-  uint8_t madctl[] = { MADCTL_BGR };
+  uint8_t madctl[] = { MADCTL_RGB };
   lcd_data(madctl, 1);
 
   lcd_cmd(CMD_INVOFF);

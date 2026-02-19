@@ -24,5 +24,7 @@ fix16_t vec3_dot(vec3_t a, vec3_t b); // Dot Product
 fix16_t vec3_length(vec3_t v); 
 vec3_t vec3_normalize(vec3_t v);
 vec3_t vec3_cross(vec3_t a, vec3_t b);
+vec3_t vec3_normal(vec3_t a, vec3_t b, vec3_t c);
+
 
 #endif

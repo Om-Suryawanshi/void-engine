@@ -75,3 +75,55 @@ void gfx_fill_rect(int x, int y, int w, int h, uint16_t color)
     for (int j = y; j < y + h; j++)
       gfx_draw_pixel(i, j, color);
 }
+
+static void swap(int *a, int *b) 
+{ 
+  int t = *a;
+  *a = *b;
+  *b = t;
+}
+
+void gfx_fill_triangle(int x1, int y1, int x2, int y2, int x3, int y3, uint16_t color)
+{
+  // y1 <- y2 <- y3
+  if (y1 > y2) 
+  {
+    swap(&x1, &x2);
+    swap(&y1, &y2);
+  }
+
+  if (y1 > y3) 
+  {
+    swap(&x1, &x3);
+    swap(&y1, &y3);
+  }
+
+  if (y2 > y3) 
+  {
+    swap(&x2, &x3);
+    swap(&y2, &y3);
+  }
+
+  int total_height = y3 - y1;
+
+  if (total_height == 0) return;
+  
+  for(int i = 0; i < total_height; i++)
+  {
+    int second_half = i > y2 - y1 || y2 == y1;
+    int segment_height = second_half ? y3 - y2 : y2 - y1;
+
+    float alpha = (float)i / total_height;
+    float beta = (float)(i - (second_half ? y2 - y1 : 0)) / segment_height;
+
+    int A_x = x1 + (x3 - x1) * alpha;
+    int B_x = second_half ? x2 + (x3 - x2) * beta : x1 + (x2 - x1) * beta;
+
+    if (A_x > B_x) swap(&A_x, &B_x);
+
+    for(int j = A_x; j <= B_x; j++)
+    {
+      gfx_draw_pixel(j, y1 + i, color);
+    }
+  }
+}

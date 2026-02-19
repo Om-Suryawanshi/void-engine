@@ -107,8 +107,11 @@ void gfx_fill_triangle(int x1, int y1, int x2, int y2, int x3, int y3, uint16_t 
   int total_height = y3 - y1;
 
   if (total_height == 0) return;
-  
-  for(int i = 0; i < total_height; i++)
+
+  int i_start = (y1 < 0) ? -y1 : 0;
+  int i_end   = (y1 + total_height > V_DISPLAY_HEIGHT) ? V_DISPLAY_HEIGHT - y1 : total_height;
+
+  for(int i = i_start; i < i_end; i++)
   {
     int second_half = i > y2 - y1 || y2 == y1;
     int segment_height = second_half ? y3 - y2 : y2 - y1;
@@ -120,6 +123,9 @@ void gfx_fill_triangle(int x1, int y1, int x2, int y2, int x3, int y3, uint16_t 
     int B_x = second_half ? x2 + (x3 - x2) * beta : x1 + (x2 - x1) * beta;
 
     if (A_x > B_x) swap(&A_x, &B_x);
+
+    if (A_x < 0) A_x = 0;
+    if (B_x >= V_DISPLAY_WIDTH) B_x = V_DISPLAY_WIDTH - 1;
 
     for(int j = A_x; j <= B_x; j++)
     {

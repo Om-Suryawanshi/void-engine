@@ -93,7 +93,7 @@ void game_draw(render_mode_t mode)
     {
         t_verts[i] = mat4_mul_vec3(mat_rot, active_mesh->vertices[i]);
         t_verts[i].z = f16_add(t_verts[i].z, camera.z);
-        if(t_verts[i].z == 0) t_verts[i].z = 1; 
+        if(t_verts[i].z < FLT_TO_F16(0.5f)) t_verts[i].z = FLT_TO_F16(0.5f);
         
         p_verts[i].x = f16_add(f16_mul(t_verts[i].x, f16_div(fov, t_verts[i].z)), INT_TO_F16(cx));
         p_verts[i].y = f16_add(f16_mul(t_verts[i].y, f16_div(fov, t_verts[i].z)), INT_TO_F16(cy));

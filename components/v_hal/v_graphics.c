@@ -115,6 +115,9 @@ void gfx_fill_triangle(int x1, int y1, int x2, int y2, int x3, int y3, uint16_t 
   {
     int second_half = i > y2 - y1 || y2 == y1;
     int segment_height = second_half ? y3 - y2 : y2 - y1;
+    
+    if (segment_height == 0) 
+      continue;
 
     float alpha = (float)i / total_height;
     float beta = (float)(i - (second_half ? y2 - y1 : 0)) / segment_height;

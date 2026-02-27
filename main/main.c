@@ -4,5 +4,5 @@
 
 void app_main(void)
 {
-  engine_start(&cube_game);
+  engine_start(&void_lander);
 }

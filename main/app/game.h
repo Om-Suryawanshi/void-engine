@@ -3,6 +3,6 @@
 
 #include "v_engine.h"
 
-extern game_config_t cube_game;
+extern game_config_t void_lander;
 
 #endif

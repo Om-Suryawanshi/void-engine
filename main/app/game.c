@@ -6,83 +6,120 @@
 #include "v_colors.h"
 #include "v_config.h"
 #include "v_primitives.h"
+#include "v_entity.h"
 
-#include <stddef.h>
+#define MAX_ENTITIES 10
+entity_t entities[MAX_ENTITIES];
 
+vec3_t camera = {0, 0, INT_TO_F16(6)};
 
-const mesh_t *active_mesh = &MESH_CUBE;
-
-uint8_t rot_x = 0;
-uint8_t rot_y = 0;
-vec3_t camera = {0, 0, INT_TO_F16(4)};
-
-uint16_t apply_lighting(uint16_t base_color, fix16_t normal_z) 
+uint16_t apply_lighting(uint16_t base_color, fix16_t normal_z)
 {
-    int intensity = normal_z; 
-    if (intensity < 0) intensity = -intensity; 
-    intensity += F16_ONE / 4; 
-    if (intensity > F16_ONE) intensity = F16_ONE;
+  int intensity = normal_z;
+  if (intensity < 0)
+    intensity = -intensity;
 
-    int r = (base_color >> 11) & 0x1F;
-    int g = (base_color >> 5) & 0x3F;
-    int b = base_color & 0x1F;
+  intensity += F16_ONE / 4;
+  if (intensity > F16_ONE)
+    intensity = F16_ONE;
 
-    r = (r * intensity) >> 16;
-    g = (g * intensity) >> 16;
-    b = (b * intensity) >> 16;
+  int r = (base_color >> 11) & 0x1F;
+  int g = (base_color >> 5) & 0x3F;
+  int b = base_color & 0x1F;
 
-    if (base_color == V_WHITE) 
-    {
-        g += 3; // Inject a little extra green
-        if (g > 63) g = 63;
-    }
+  r = (r * intensity) >> 16;
+  g = (g * intensity) >> 16;
+  b = (b * intensity) >> 16;
 
-    return (r << 11) | (g << 5) | b;
+  if (base_color == V_WHITE)
+  {
+    g += 3;
+    if (g > 63)
+      g = 63;
+  }
+
+  return (r << 11) | (g << 5) | b;
 }
 
 void game_load(void)
 {
+  for(int i = 0; i < MAX_ENTITIES; i++)
+    entities[i].active = false;
+
+  entities[0].active = true;
+  entities[0].mesh = &MESH_PYRAMID;
+  entities[0].pos = (vec3_t){0, INT_TO_F16(2), 0};
+  entities[0].color = V_WHITE;
+
+  entities[1].active = true;
+  entities[1].mesh = &MESH_CUBE;
+  entities[1].pos = (vec3_t){0, INT_TO_F16(-2), 0};
+  entities[1].color = V_CYAN;
 }
 
 void game_update(float dt)
 {
   uint8_t k = input_get();
-  if (k & INPUT_UP) 
-    rot_x -= 2;
-  if (k & INPUT_DOWN) 
-    rot_x += 2;
-  if (k & INPUT_LEFT) 
-    rot_y -= 2;
-  if (k & INPUT_RIGHT) 
-    rot_y += 2;
+  float rot_speed = 200.0f * dt;
 
-  if (k & INPUT_A) 
-    camera.z = f16_sub(camera.z, FLT_TO_F16(0.1f));
-  if (k & INPUT_B) 
-    camera.z = f16_add(camera.z, FLT_TO_F16(0.1f));
+  entities[1].rot.y += rot_speed;
+  if (entities[1].rot.y >= 256.0f)
+    entities[1].rot.y -= 256.0f;
 
-  static bool toggle_prev = false;
-  bool toggle = (k & INPUT_LEFT) && (k & INPUT_RIGHT);
+  if(k & INPUT_LEFT)
+    entities[0].pos.x = f16_sub(entities[0].pos.x, FLT_TO_F16(2.0f * dt));
+  if(k & INPUT_RIGHT)
+    entities[0].pos.x = f16_add(entities[0].pos.x, FLT_TO_F16(2.0f * dt));
+  if(k & INPUT_UP)
+    entities[0].pos.y = f16_sub(entities[0].pos.y, FLT_TO_F16(2.0f * dt));
+  if(k & INPUT_DOWN)
+    entities[0].pos.y = f16_add(entities[0].pos.y, FLT_TO_F16(2.0f * dt));
 
-  if(toggle && !toggle_prev)
+  fix16_t move_speed = FLT_TO_F16(4.0f * dt);
+  if(k & INPUT_A)
+    camera.z = f16_sub(camera.z, move_speed);
+  if(k & INPUT_B)
+    camera.z = f16_add(camera.z, move_speed);
+}
+
+void sort_entities(entity_t **list, int count)
+{
+  for(int i = 1; i < count; i++)
   {
-    static int mode = 1;
-    mode = (mode + 1) % 3;
-    engine_set_mode((render_mode_t)mode);
+    entity_t *key = list[i];
+    fix16_t key_z = f16_add(key->pos.z, camera.z);
+
+    int j = i - 1;
+    while(j >= 0)
+    {
+      fix16_t j_z = f16_add(list[j]->pos.z, camera.z);
+      if (j_z < key_z)
+      {
+        list[j+ 1] = list[j];
+        j--;
+      }
+      else
+      {
+        break;
+      }
+    }
+    list[j + 1] = key;
   }
-  toggle_prev = toggle;
 }
 
 void game_draw(render_mode_t mode)
 {
-    gfx_clear(V_BLACK);
+  gfx_clear(V_BLACK);
 
-    mat4_t mat_rot = mat4_mul(mat4_rotate_x(rot_x), mat4_rotate_y(rot_y));
+  entity_t *draw_list[MAX_ENTITIES];
+  int draw_count = 0;
+  for(int i = 0; i < MAX_ENTITIES; i++)
+  {
+    if(entities[i].active)
+      draw_list[draw_count++] = &entities[i];
+  }
 
-    // We dynamically size these arrays based on the loaded mesh
-    int num_verts = active_mesh->num_vertices;
-    vec3_t t_verts[num_verts];
-    vec2_t p_verts[num_verts];
+  sort_entities(draw_list, draw_count);
 
     int cx = V_DISPLAY_WIDTH/2;
     int cy = V_DISPLAY_HEIGHT/2;
@@ -101,56 +138,56 @@ void game_draw(render_mode_t mode)
         p_verts[i].y = f16_add(f16_mul(t_verts[i].y, f16_div(fov, t_verts[i].z)), INT_TO_F16(cy));
     }
 
-    // Render Solid Faces
-    if (mode == RENDER_SOLID || mode == RENDER_BOTH) 
+    for(int i = 0; i < num_verts; i++)
     {
-        for(int i = 0; i < active_mesh->num_faces; i++) 
-        {
-            // Get the indices for the 3 points of this triangle
-            int i1 = active_mesh->faces[i][0];
-            int i2 = active_mesh->faces[i][1];
-            int i3 = active_mesh->faces[i][2];
+      vec3_t p = mat4_mul_vec3(mat_rot, mesh->vertices[i]);
+      p = vec3_add(p , ent->pos);
+      p.z = f16_add(p.z, camera.z);
 
-            vec3_t normal = vec3_normal(t_verts[i1], t_verts[i2], t_verts[i3]);
-            
-            // Backface Culling
-            if (normal.z < 0) 
-            { 
-                int x1 = F16_TO_INT(p_verts[i1].x);
-                int y1 = F16_TO_INT(p_verts[i1].y);
-                int x2 = F16_TO_INT(p_verts[i2].x);
-                int y2 = F16_TO_INT(p_verts[i2].y);
-                int x3 = F16_TO_INT(p_verts[i3].x);
-                int y3 = F16_TO_INT(p_verts[i3].y);
+      if(p.z < near_plane)
+      {
+        v_culled[i] = true;
+        p.z = near_plane;
+      }
+      else
+      {
+        v_culled[i] = false;
+      }
 
-                // Pure monochromatic lighting
-                uint16_t shaded_color = apply_lighting(V_WHITE, normal.z);
-                gfx_fill_triangle(x1, y1, x2, y2, x3, y3, shaded_color);
-            }
-        }
+      t_verts[i] = p;
+      p_verts[i].x = f16_add(f16_mul(p.x, f16_div(fov, p.z)), INT_TO_F16(cx));
+      p_verts[i].y = f16_add(f16_mul(p.y, f16_div(fov, p.z)), INT_TO_F16(cy));
     }
 
-    // Render Classic Wireframe
-    if (mode == RENDER_WIRE || mode == RENDER_BOTH) 
+    for(int i = 0; i < mesh->num_faces; i++)
     {
-        for(int i = 0; i < active_mesh->num_edges; i++) 
-        {
-            int i1 = active_mesh->edges[i][0];
-            int i2 = active_mesh->edges[i][1];
+      int i1 = mesh->faces[i][0];
+      int i2 = mesh->faces[i][1];
+      int i3 = mesh->faces[i][2];
 
-            int x1 = F16_TO_INT(p_verts[i1].x);
-            int y1 = F16_TO_INT(p_verts[i1].y);
-            int x2 = F16_TO_INT(p_verts[i2].x);
-            int y2 = F16_TO_INT(p_verts[i2].y);
+      if(v_culled[i1] || v_culled[i2] || v_culled[i3]) 
+        continue;
 
-            uint16_t color = (mode == RENDER_BOTH) ? V_BLACK : V_GREEN; 
-            gfx_draw_line(x1, y1, x2, y2, color);
-        }
+      vec3_t normal = vec3_normal(t_verts[i1], t_verts[i2], t_verts[i3]);
+
+      if(normal.z < 0)
+      {
+        int x1 = F16_TO_INT(p_verts[i1].x);
+        int y1 = F16_TO_INT(p_verts[i1].y);
+        int x2 = F16_TO_INT(p_verts[i2].x);
+        int y2 = F16_TO_INT(p_verts[i2].y);
+        int x3 = F16_TO_INT(p_verts[i3].x);
+        int y3 = F16_TO_INT(p_verts[i3].y);
+
+        uint16_t shaded_color = apply_lighting(ent->color, normal.z);
+        gfx_fill_triangle(x1, y1, x2, y2, x3, y3, shaded_color);
+      }
     }
+  }
 }
 
-game_config_t cube_game = {
-  .on_load = NULL,
+game_config_t void_lander = {
+  .on_load = game_load,
   .on_update = game_update,
   .on_draw = game_draw
 };

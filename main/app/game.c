@@ -121,21 +121,22 @@ void game_draw(render_mode_t mode)
 
   sort_entities(draw_list, draw_count);
 
-  int cx = V_DISPLAY_WIDTH / 2;
-  int cy = V_DISPLAY_HEIGHT / 2;
-  fix16_t fov = INT_TO_F16(150);
-  fix16_t near_plane = FLT_TO_F16(0.5f);
-
-  for(int e = 0; e < draw_count; e++)
-  {
-    entity_t *ent = draw_list[e];
-    const mesh_t *mesh = ent->mesh;
-    mat4_t mat_rot = mat4_mul(mat4_rotate_x((uint8_t)ent->rot.x), mat4_rotate_y((uint8_t)ent->rot.y));
-
-    int num_verts = mesh->num_vertices;
-    vec3_t t_verts[num_verts];
-    vec2_t p_verts[num_verts];
-    bool v_culled[num_verts];
+    int cx = V_DISPLAY_WIDTH/2;
+    int cy = V_DISPLAY_HEIGHT/2;
+    fix16_t fov = INT_TO_F16(150);
+    const fix16_t near_z = FLT_TO_F16(0.5f);
+    // Transform and Project
+    for(int i = 0; i < num_verts; i++) 
+    {
+        t_verts[i] = mat4_mul_vec3(mat_rot, active_mesh->vertices[i]);
+        t_verts[i].z = f16_add(t_verts[i].z, camera.z);
+        
+        if(t_verts[i].z < near_z) 
+          t_verts[i].z = near_z;
+        
+        p_verts[i].x = f16_add(f16_mul(t_verts[i].x, f16_div(fov, t_verts[i].z)), INT_TO_F16(cx));
+        p_verts[i].y = f16_add(f16_mul(t_verts[i].y, f16_div(fov, t_verts[i].z)), INT_TO_F16(cy));
+    }
 
     for(int i = 0; i < num_verts; i++)
     {
